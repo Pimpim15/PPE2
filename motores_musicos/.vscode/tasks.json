@@ -1,0 +1,23 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "pio:build",
+      "type": "shell",
+      "command": "pio run",
+      "problemMatcher": []
+    },
+    {
+      "label": "pio:upload",
+      "type": "shell",
+      "command": "pio run -t upload",
+      "problemMatcher": []
+    },
+    {
+      "label": "flutter:run",
+      "type": "shell",
+      "command": "flutter run -d <device>",
+      "problemMatcher": []
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "arduino.path": "C:/Users/micae/.platformio/packages/framework-arduino-avr/cores/arduino",
+  "arduino.commandPath": "arduino_debug.exe",
+  "arduino.logLevel": "info",
+  "arduino.enableUSBDetection": true,
+  "arduino.disableTestingOpen": false,
+  "arduino.skipHeaderProvider": false,
+  "arduino.additionalUrls": [
+        "https://raw.githubusercontent.com/VSChina/azureiotdevkit_tools/master/package_azureboard_index.json",
+        "http://arduino.esp8266.com/stable/package_esp8266com_index.json"
+    ],
+  "arduino.defaultBaudRate": 9600,
+  "terminal.integrated.encoding": "utf8",
+  "mcp.reloadTick": 1696000000,
+  "recommendations": [
+    "ms-vscode.cpptools",
+    "platformio.platformio-ide",
+    "Dart-Code.dart-code",
+    "Dart-Code.flutter"
+  ],
+  "files.associations": {
+    "*.ino": "cpp"
+  },
+  "C_Cpp.default.intelliSenseMode": "gcc-x64",
+  "C_Cpp.default.includePath": [
+    "${workspaceFolder}/include",
+    "${workspaceFolder}/firmware/src",
+    "${workspaceFolder}/firmware/.pio/libdeps/uno/**",
+    "C:/Users/micae/.platformio/packages/framework-arduino-avr/cores/arduino",
+    "C:/Users/micae/.platformio/packages/framework-arduino-avr/variants/standard",
+    "C:/Users/micae/.platformio/packages/toolchain-atmelavr/lib/gcc/avr/7.3.0/include",
+    "C:/Users/micae/.platformio/packages/toolchain-atmelavr/lib/gcc/avr/7.3.0/include-fixed",
+    "C:/Users/micae/.platformio/packages/toolchain-atmelavr/avr/include",
+    "C:/Users/micae/.platformio/packages/toolchain-atmelavr/avr/include/avr"
+  ],
+  "C_Cpp.default.compileCommands": "${workspaceFolder}/firmware/compile_commands.json",
+  "C_Cpp.default.compilerPath": "C:/Users/micae/.platformio/packages/toolchain-atmelavr/bin/avr-g++.exe",
+  "C_Cpp.default.compilerArgs": [
+    "-mmcu=atmega328p",
+    "-std=gnu++11",
+    "-DF_CPU=16000000L",
+    "-DARDUINO_ARCH_AVR",
+    "-DARDUINO_AVR_UNO"
+  ],
+  "C_Cpp.default.forcedInclude": [
+    "C:/Users/micae/.platformio/packages/framework-arduino-avr/cores/arduino/Arduino.h"
+  ]
+}

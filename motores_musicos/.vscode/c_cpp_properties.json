@@ -1,0 +1,50 @@
+{
+  "configurations": [
+    {
+      "name": "Win32",
+      "includePath": [
+        "${workspaceRoot}",
+        "${workspaceFolder}/.vscode",
+        "${workspaceFolder}/include",
+        "${workspaceFolder}/**",
+        "${workspaceFolder}/firmware/.pio/libdeps/uno/**",
+        "${workspaceFolder}/firmware/.pio/build/uno/FrameworkArduino",
+        "${workspaceFolder}/firmware/.pio/build/uno/FrameworkArduino/cores/arduino",
+        "${workspaceFolder}/firmware/.pio/build/uno/FrameworkArduino/variants/standard",
+        "C:/Users/micae/.platformio/packages/framework-arduino-avr/cores/arduino",
+        "C:/Users/micae/.platformio/packages/framework-arduino-avr/variants/standard",
+        "C:/Users/micae/.platformio/packages/toolchain-atmelavr/lib/gcc/avr/7.3.0/include",
+        "C:/Users/micae/.platformio/packages/toolchain-atmelavr/lib/gcc/avr/7.3.0/include-fixed",
+        "C:/Users/micae/.platformio/packages/toolchain-atmelavr/avr/include",
+        "C:/Users/micae/.platformio/packages/toolchain-atmelavr/avr/include/avr"
+      ],
+      "browse": {"limitSymbolsToIncludedHeaders": true,
+        "path": [
+          "${workspaceFolder}",
+          "${workspaceFolder}/firmware/.pio/libdeps/uno",
+          "${workspaceFolder}/firmware/.pio/build/uno/FrameworkArduino"
+        ]
+      },
+      "intelliSenseMode": "gcc-x64",
+  "compilerPath": "C:/Users/micae/.platformio/packages/toolchain-atmelavr/bin/avr-g++.exe",
+      "compilerArgs": [
+        "-mmcu=atmega328p",
+        "-std=c++17",
+        "-DF_CPU=16000000L",
+        "-DARDUINO_ARCH_AVR",
+        "-DARDUINO_AVR_UNO"
+      ],
+      "cStandard": "c11",
+      "cppStandard": "c++17",
+      "defines": [
+        "USBCON",
+        "ARDUINO=10809"
+      ],
+      "forcedInclude": [
+        "C:/Users/micae/.platformio/packages/framework-arduino-avr/cores/arduino/Arduino.h"
+      ],
+  "compileCommands": "${workspaceFolder}/firmware/compile_commands.json"
+    }
+  ],
+  "version": 4
+}
