@@ -1,35 +1,13 @@
 #ifndef IMPERIAL_SCORE_H
 #define IMPERIAL_SCORE_H
 
+#include <stddef.h>
+
+#include "motor_map.h"
+
 // Marcha Imperial (short choreography) - 100 BPM => 600 ms per beat
 // Events list: dt_ms is absolute time from start
-const Event IMPERIAL_SCORE[] = {
-  {0,    0,    0,    0,    0},
-  {600,  800,  0,    0,    0},
-  {1200, 400,  0,    0,    0},
-  {1800, 900,  0,    0,    0},
-  {2400, 0,    700,  0,    0},
-  {3000, 0,    300,  0,    0},
-  {3600, 0,    900,  0,    0},
-  {4200, -400, 0,    500,  0},
-  {4800, -800, 0,    200,  0},
-  {5400, -200, 0,    900,  0},
-  {6000, 0,    0,    0,    600},
-  {6600, 0,    0,    0,    300},
-  {7200, 0,    0,    0,    900},
-  {7800, 500,  500,  0,    -300},
-  {8400, 300,  800,  -200, -600},
-  {9000, 900,  200,  400,  0},
-  {9600, -500, -500, 0,    0},
-  {10200,-200, -800, 200,  400},
-  {10800,800,  0,    -400, -200},
-  {11400,0,    700,  0,    700},
-  {12000,0,    300,  0,    300},
-  {12600,0,    1000, 0,    1000},
-  {13200,400,  -400, 800,  -800},
-  {13800,0,    0,    0,    0}
-};
-
-const size_t IMPERIAL_N = sizeof(IMPERIAL_SCORE)/sizeof(IMPERIAL_SCORE[0]);
+extern const Event IMPERIAL_SCORE[];
+extern const size_t IMPERIAL_N;
 
 #endif

@@ -1,6 +1,8 @@
 #ifndef MOTOR_MAP_H
 #define MOTOR_MAP_H
 
+#include <stdint.h>
+
 // HM-10 pins (SoftwareSerial)
 #define HM10_RX_PIN 10 // UNO receives from HM-10 TX
 #define HM10_TX_PIN 11 // UNO transmits to HM-10 RX

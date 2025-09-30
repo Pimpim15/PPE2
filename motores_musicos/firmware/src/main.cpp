@@ -3,6 +3,7 @@
 #include <SoftwareSerial.h>
 #include <AccelStepper.h>
 #include <cstddef>
+#include <stddef.h>
 #include "motor_map.h"
 #include "protocol.h"
 #include "demo_score.h"
