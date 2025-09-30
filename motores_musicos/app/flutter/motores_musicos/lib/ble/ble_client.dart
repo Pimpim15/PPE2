@@ -1,77 +1,205 @@
 import 'dart:async';
 import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 
 class BleClient {
-  final _ble = FlutterReactiveBle();
-  late StreamSubscription<DiscoveredDevice> _scanSub;
+  final FlutterReactiveBle _ble = FlutterReactiveBle();
+
+  StreamSubscription<DiscoveredDevice>? _scanSub;
+  StreamSubscription<ConnectionStateUpdate>? _connSub;
+  StreamSubscription<List<int>>? _notifySub;
+
   DiscoveredDevice? _device;
-  late QualifiedCharacteristic _txChar; // write
-  late QualifiedCharacteristic _rxChar; // notify
-  StreamController<String> _lines = StreamController.broadcast();
+  QualifiedCharacteristic? _txChar;
+
+  final StreamController<String> _lines = StreamController<String>.broadcast();
+  String _rxBuffer = '';
 
   Stream<String> get lines => _lines.stream;
+  DiscoveredDevice? get device => _device;
 
-  Future<void> startScan(Function(String) onLog) async {
-    onLog('Scanning for HM-10...');
-    _scanSub = _ble.scanForDevices(withServices: []).listen((d) {
-      final name = d.name;
-      if (name != null && (name.contains('HM') || name.contains('HMSoft') || name.contains('HM-10'))) {
-        onLog('Found ${d.name} ${d.id}');
-        _device = d;
-        _scanSub.cancel();
+  Future<DiscoveredDevice> startScan(
+    void Function(String) onLog, {
+    Duration timeout = const Duration(seconds: 12),
+  }) async {
+    await _scanSub?.cancel();
+    final completer = Completer<DiscoveredDevice>();
+    onLog('Iniciando busca por HM-10...');
+    _scanSub = _ble.scanForDevices(withServices: []).listen((device) {
+      final name = device.name;
+      if (name.contains('HM') || name.contains('HMSoft') || name.contains('HM-10')) {
+        onLog('Dispositivo encontrado: $name (${device.id})');
+        _device = device;
+        if (!completer.isCompleted) {
+          completer.complete(device);
+        }
+        _scanSub?.cancel();
       }
-    }, onError: (e) => onLog('Scan error: $e'));
-  }
+    }, onError: (error) {
+      if (!completer.isCompleted) {
+        completer.completeError(error);
+      }
+      onLog('Erro ao escanear: $error');
+    });
 
-  Future<void> connect(Function(String) onLog) async {
-    if (_device == null) throw Exception('No device');
-    onLog('Connecting to ${_device!.name}');
-    final conn = _ble.connectToDevice(id: _device!.id, servicesWithCharacteristicsToDiscover: {}).listen((event) async {
-      if (event.connectionState == DeviceConnectionState.connected) {
-        onLog('Connected, discovering services...');
-        final services = await _ble.discoverServices(_device!.id);
-        onLog('Services: ' + services.map((s) => s.serviceId.toString()).join(','));
-        // Find a service with a writable characteristic and a notify characteristic
-        for (final s in services) {
-          for (final c in s.characteristics) {
-            onLog('Char ${c.characteristicId} properties ${c.isWritableWithResponse} ${c.isNotifiable}');
-          }
-        }
-        // heuristic: try FFE0/FFE1
-        final ffeService = services.firstWhere(
-            (s) => s.serviceId.toString().toUpperCase().contains('FFE0') || s.serviceId.toString().toUpperCase().contains('FFE0'),
-            orElse: () => services.isNotEmpty ? services[0] : throw Exception('No services'));
-        final chars = ffeService.characteristics;
-        // pick write and notify
-        QualifiedCharacteristic? writeC;
-        QualifiedCharacteristic? notifyC;
-        for (final c in chars) {
-          if (c.isWritableWithResponse == true && writeC==null) writeC = QualifiedCharacteristic(serviceId: ffeService.serviceId, characteristicId: c.characteristicId, deviceId: _device!.id);
-          if (c.isNotifiable == true && notifyC==null) notifyC = QualifiedCharacteristic(serviceId: ffeService.serviceId, characteristicId: c.characteristicId, deviceId: _device!.id);
-        }
-        if (writeC==null && chars.isNotEmpty) {
-          writeC = QualifiedCharacteristic(serviceId: ffeService.serviceId, characteristicId: chars[0].characteristicId, deviceId: _device!.id);
-        }
-        _txChar = writeC!;
-        if (notifyC != null) {
-          _rxChar = notifyC;
-          _ble.subscribeToCharacteristic(_rxChar).listen((data) {
-            final s = utf8.decode(data);
-            _lines.add(s);
-          });
-        }
-        onLog('Ready to write');
+    Future<void>.delayed(timeout, () {
+      if (!completer.isCompleted) {
+        onLog('Tempo limite atingido ao procurar HM-10.');
+        completer.completeError(TimeoutException('Nenhum dispositivo HM-10 encontrado em $timeout.'));
+        _scanSub?.cancel();
       }
     });
+    return completer.future;
   }
 
-  Future<void> writeLine(String s) async {
-    final bytes = utf8.encode(s + '\n');
-    await _ble.writeCharacteristicWithResponse(_txChar, value: bytes);
+  Future<void> connect(
+    void Function(String) onLog, {
+    required VoidCallback onDisconnected,
+    Duration timeout = const Duration(seconds: 15),
+  }) async {
+    final selected = _device;
+    if (selected == null) {
+      throw Exception('Nenhum dispositivo selecionado');
+    }
+
+    await _connSub?.cancel();
+    await _notifySub?.cancel();
+  _txChar = null;
+    _rxBuffer = '';
+
+    final completer = Completer<void>();
+    bool ready = false;
+
+  onLog('Conectando em ${selected.name}...');
+    _connSub = _ble
+        .connectToDevice(
+          id: selected.id,
+          connectionTimeout: timeout,
+        )
+        .listen((event) async {
+      switch (event.connectionState) {
+        case DeviceConnectionState.connected:
+          onLog('Conectado. Descobrindo serviços...');
+          try {
+            await _prepareCharacteristics(selected, onLog);
+            ready = true;
+            if (!completer.isCompleted) {
+              completer.complete();
+            }
+            onLog('Pronto para enviar comandos.');
+          } catch (error) {
+            if (!completer.isCompleted) {
+              completer.completeError(error);
+            }
+            onLog('Erro ao preparar características: $error');
+          }
+          break;
+  case DeviceConnectionState.disconnected:
+          onLog('Conexão encerrada.');
+          if (ready) {
+            onDisconnected();
+          }
+          await _notifySub?.cancel();
+          _notifySub = null;
+          if (!completer.isCompleted) {
+            completer.completeError(Exception('Desconectado antes de finalizar preparação.'));
+          }
+          break;
+        default:
+          break;
+      }
+    }, onError: (error) {
+      if (!completer.isCompleted) {
+        completer.completeError(error);
+      }
+      onLog('Erro de conexão: $error');
+    });
+
+    return completer.future;
   }
 
-  void dispose() {
-    _lines.close();
+  Future<void> _prepareCharacteristics(DiscoveredDevice device, void Function(String) onLog) async {
+  // ignore: deprecated_member_use
+  final services = await _ble.discoverServices(device.id);
+    onLog('Serviços GATT: ${services.map((s) => s.serviceId).join(', ')}');
+
+    QualifiedCharacteristic? writeChar;
+    QualifiedCharacteristic? notifyChar;
+
+    for (final service in services) {
+      for (final characteristic in service.characteristics) {
+        if (writeChar == null && (characteristic.isWritableWithResponse || characteristic.isWritableWithoutResponse)) {
+          writeChar = QualifiedCharacteristic(
+            serviceId: service.serviceId,
+            characteristicId: characteristic.characteristicId,
+            deviceId: device.id,
+          );
+        }
+        if (notifyChar == null && characteristic.isNotifiable) {
+          notifyChar = QualifiedCharacteristic(
+            serviceId: service.serviceId,
+            characteristicId: characteristic.characteristicId,
+            deviceId: device.id,
+          );
+        }
+      }
+    }
+
+    if (writeChar == null) {
+      throw Exception('Nenhuma característica de escrita encontrada.');
+    }
+    _txChar = writeChar;
+
+    if (notifyChar != null) {
+      _notifySub = _ble.subscribeToCharacteristic(notifyChar).listen((data) {
+        _onNotifyData(data);
+      }, onError: (error) {
+        onLog('Erro no stream BLE: $error');
+      });
+      onLog('Inscrito para notificações BLE.');
+    } else {
+      onLog('Aviso: característica de notificação não encontrada. Apenas envio disponível.');
+    }
+  }
+
+  void _onNotifyData(List<int> data) {
+    final chunk = utf8.decode(data, allowMalformed: true);
+    _rxBuffer += chunk;
+    while (true) {
+      final newlineIndex = _rxBuffer.indexOf(RegExp(r'[\r\n]'));
+      if (newlineIndex == -1) {
+        break;
+      }
+      final line = _rxBuffer.substring(0, newlineIndex).trim();
+      if (line.isNotEmpty) {
+        _lines.add(line);
+      }
+      _rxBuffer = _rxBuffer.substring(newlineIndex + 1);
+    }
+  }
+
+  Future<void> writeLine(String command) async {
+    final characteristic = _txChar;
+    if (characteristic == null) {
+      throw Exception('Canal de escrita BLE ainda não pronto.');
+    }
+    final payload = utf8.encode('$command\n');
+    await _ble.writeCharacteristicWithResponse(characteristic, value: payload);
+  }
+
+  Future<void> disconnect() async {
+    await _scanSub?.cancel();
+    await _notifySub?.cancel();
+    await _connSub?.cancel();
+    _scanSub = null;
+    _notifySub = null;
+    _connSub = null;
+  }
+
+  Future<void> dispose() async {
+    await disconnect();
+    await _lines.close();
   }
 }

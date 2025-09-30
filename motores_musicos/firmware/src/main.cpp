@@ -32,6 +32,8 @@ size_t score_idx = 0;
 unsigned long score_start_ms = 0;
 unsigned long last_tick_ms = 0;
 const unsigned long TICK_MS = 10;
+const Event* activeScore = nullptr;
+size_t activeN = 0;
 
 // Buffer do parser
 char lineBuf[64];
@@ -93,6 +95,9 @@ void setPlayerStateLog(const char* s) {
 }
 
 void startPlayback(const Event* score, size_t n) {
+  activeScore = score;
+  activeN = n;
+
   motorsEnable(true);
   playing = true;
   paused = false;
@@ -239,5 +244,7 @@ void loop() {
     }
   }
 
-  tickPlayer(IMPERIAL_SCORE, IMPERIAL_N);
+  const Event* s = activeScore ? activeScore : IMPERIAL_SCORE;
+  size_t n = activeN ? activeN : IMPERIAL_N;
+  tickPlayer(s, n);
 }
